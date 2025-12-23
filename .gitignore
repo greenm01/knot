@@ -1,0 +1,13 @@
+# ignore files with no extention:
+*
+!*/
+!*.*
+docs
+
+trial.*
+*.sublime-*
+*.out
+tests/a.nim
+*.orig
+
+.claude
