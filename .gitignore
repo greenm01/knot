@@ -12,3 +12,8 @@ tests/a.nim
 *.orig
 
 .claude
+
+# Exclude test data files
+*.html
+*.xsl
+*.xslt
