@@ -1,6 +1,6 @@
 # Knot
 
-A production-ready KDL 2.0 document parser for Nim.
+A KDL 2.0 document parser for Nim.
 
 ![Tests](https://img.shields.io/badge/tests-98.4%25%20passing-brightgreen)
 ![Nim](https://img.shields.io/badge/nim-2.0%2B-blue)
