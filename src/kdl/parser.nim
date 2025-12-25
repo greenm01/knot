@@ -328,22 +328,44 @@ proc quotedString(p: Parser): ParseResult[KdlVal] =
           p.advance(3)
           # Add the current line (might be closing line with indent)
           lines.add(currentLine)
-          # Dedent based on last line's indentation
+          # Dedent based on last line's indentation (Unicode whitespace)
           var indent = ""
           if lines.len > 0:
             let lastLine = lines[lines.len - 1]
-            for ch in lastLine:
-              if ch in {' ', '\t'}:
-                indent.add(ch)
+            var pos = 0
+            while pos < lastLine.len:
+              let r = lastLine.runeAt(pos)
+              if isUnicodeSpace(r):
+                # Add the UTF-8 bytes for this rune
+                for i in 0 ..< r.size:
+                  indent.add(lastLine[pos + i])
+                pos += r.size
               else:
                 break
           # Remove indent from all lines and remove last line (closing delimiter line)
+          # Empty lines (whitespace-only) should be reflected as empty per spec
           var dedented: seq[string] = @[]
           for i in 0 ..< lines.len - 1:
             let line = lines[i]
-            if line.startsWith(indent):
+            # Check if line is empty (whitespace-only or truly empty)
+            # Must check for Unicode whitespace, not just ASCII space/tab
+            var isEmpty = true
+            var pos = 0
+            while pos < line.len:
+              let r = line.runeAt(pos)
+              if not isUnicodeSpace(r):
+                isEmpty = false
+                break
+              pos += r.size
+
+            if isEmpty:
+              # Empty line - add as empty string
+              dedented.add("")
+            elif line.startsWith(indent):
+              # Non-empty line starting with indent - remove indent
               dedented.add(line[indent.len .. ^1])
             else:
+              # Non-empty line not starting with indent - keep as-is
               dedented.add(line)
           return success(initKString(dedented.join("\n")), p.pos)
         else:
@@ -460,23 +482,45 @@ proc rawString(p: Parser): ParseResult[KdlVal] =
       p.unexpectedEof("multiline raw string")
       return failure[KdlVal]()
 
-    # Dedent based on last line's indentation
+    # Dedent based on last line's indentation (Unicode whitespace)
     var indent = ""
     if lines.len > 0:
       let lastLine = lines[lines.len - 1]
-      for ch in lastLine:
-        if ch in {' ', '\t'}:
-          indent.add(ch)
+      var pos = 0
+      while pos < lastLine.len:
+        let r = lastLine.runeAt(pos)
+        if isUnicodeSpace(r):
+          # Add the UTF-8 bytes for this rune
+          for i in 0 ..< r.size:
+            indent.add(lastLine[pos + i])
+          pos += r.size
         else:
           break
 
     # Remove indent from all lines except the last line (closing delimiter line)
+    # Empty lines (whitespace-only) should be reflected as empty per spec
     var dedented: seq[string] = @[]
     for i in 0 ..< lines.len - 1:
       let line = lines[i]
-      if line.startsWith(indent):
+      # Check if line is empty (whitespace-only or truly empty)
+      # Must check for Unicode whitespace, not just ASCII space/tab
+      var isEmpty = true
+      var pos = 0
+      while pos < line.len:
+        let r = line.runeAt(pos)
+        if not isUnicodeSpace(r):
+          isEmpty = false
+          break
+        pos += r.size
+
+      if isEmpty:
+        # Empty line - add as empty string
+        dedented.add("")
+      elif line.startsWith(indent):
+        # Non-empty line starting with indent - remove indent
         dedented.add(line[indent.len .. ^1])
       else:
+        # Non-empty line not starting with indent - keep as-is
         dedented.add(line)
 
     return success(initKString(dedented.join("\n")), p.pos)
