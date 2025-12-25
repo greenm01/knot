@@ -1431,5 +1431,11 @@ proc parseKdl*(source: string): KdlDoc =
   if not docRes.ok:
     raise newException(KdlParserError, "Failed to parse KDL document")
 
+  # Check that we've consumed all input
+  if not p.atEnd():
+    p.addError("Unexpected content after end of document")
+    let errMsg = p.getErrorMessage(source)
+    raise newException(KdlParserError, errMsg)
+
   # Convert internal representation to public API
   return toPublicDoc(docRes.value)
