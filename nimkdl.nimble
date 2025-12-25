@@ -1,6 +1,6 @@
 # Package
 packageName = "nimkdl"
-version = "2.0.1"
+version = "2.0.2"
 author = "niltempus"
 description = "KDL 2.0 document parser for Nim"
 license = "MIT"
