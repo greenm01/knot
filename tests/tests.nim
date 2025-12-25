@@ -7,7 +7,7 @@ import kdl/[schema, query, jik, xik]
 proc parseKdlFile(path: string): KdlDoc = parseKdl(readFile(path))
 proc parseKdlFileStream(path: string): KdlDoc = parseKdl(readFile(path))
 
-let testsDir = getAppDir() / "test_cases"
+let testsDir = currentSourcePath().parentDir() / "test_cases"
 
 suite "spec":
   for kind, path in walkDir(testsDir / "input"):
