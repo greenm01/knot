@@ -1213,7 +1213,15 @@ proc baseNode(p: Parser): ParseResult[InternalNode] =
       let sdRes = slashdash(p)
       if sdRes.ok:
         # Slashdashed children - parse and discard
-        discard nodeSpace(p)
+        # Consume whitespace, newlines, and esclines after slashdash
+        while true:
+          if nodeSpace(p).ok:
+            continue
+          if lineSpace(p).ok:
+            continue
+          if escline(p).ok:
+            continue
+          break
         discard nodeChildren(p)
         break
     else:
@@ -1228,7 +1236,15 @@ proc baseNode(p: Parser): ParseResult[InternalNode] =
           continue
         # If entry parsing failed, could be slashdashed children
         p.pos = savedPos + 2  # Skip past '/-'
-        discard nodeSpace(p)
+        # Consume whitespace, newlines, and esclines after slashdash
+        while true:
+          if nodeSpace(p).ok:
+            continue
+          if lineSpace(p).ok:
+            continue
+          if escline(p).ok:
+            continue
+          break
         discard nodeChildren(p)
         break
 
