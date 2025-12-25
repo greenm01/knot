@@ -1252,8 +1252,10 @@ proc node(p: Parser): ParseResult[InternalNode] =
           p.advance()
         else:
           discard newline(p)
-    else:
-      break
+      # Continue loop to check for more slashdashed nodes or whitespace
+      continue
+
+    break
 
   # Parse the actual node
   let nodeRes = baseNode(p)
@@ -1321,6 +1323,21 @@ proc nodes(p: Parser): ParseResult[seq[InternalNode]] =
 
   # Parse nodes
   while not p.atEnd():
+    # Check for slashdashed nodes before trying to parse a real node
+    while true:
+      let sdRes = slashdash(p)
+      if sdRes.ok:
+        # Consume whitespace after slashdash
+        while true:
+          let lsRes = lineSpace(p)
+          if lsRes.ok:
+            continue
+          break
+        # Parse and discard the slashdashed node
+        discard node(p)
+        continue
+      break
+
     let savedPos = p.pos
     let nodeRes = node(p)
     if nodeRes.ok:
