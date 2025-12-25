@@ -1324,12 +1324,20 @@ proc nodeEntry(p: Parser): ParseResult[Option[InternalEntry]] =
       if p.tryChar('=').ok:
         discard wss(p)
         # It's a property, parse the value
-        discard value(p)
-        return success(none(InternalEntry), p.pos)
+        let propValRes = value(p)
+        if propValRes.ok and propValRes.value.isSome:
+          return success(none(InternalEntry), p.pos)
+        # KDL v2: Slashdash must be followed by valid property
+        p.addError("Slashdash (/-) must be followed by a valid entry")
+        return failure[Option[InternalEntry]]()
     # Not a property, reset and parse as value
     p.pos = savedPos
-    discard value(p)
-    return success(none(InternalEntry), p.pos)
+    let valRes = value(p)
+    if valRes.ok and valRes.value.isSome:
+      return success(none(InternalEntry), p.pos)
+    # KDL v2: Slashdash must be followed by valid value
+    p.addError("Slashdash (/-) must be followed by a valid entry")
+    return failure[Option[InternalEntry]]()
 
   # Try to parse as property (key=value)
   let propStart = p.pos
@@ -1488,6 +1496,10 @@ proc baseNode(p: Parser): ParseResult[InternalNode] =
         if entryRes.value.isSome or p.pos != entryStartPos:
           # Entry was parsed OR position advanced (slashdash consumed something)
           if entryRes.value.isSome:
+            # KDL v2: Arguments/properties must come BEFORE children
+            if children.isSome:
+              p.addError("Arguments and properties must come before children block")
+              return failure[InternalNode]()
             entries.add(entryRes.value.get)
           # Continue parsing even if it was a slashdashed (None) entry
           continue
@@ -1532,13 +1544,24 @@ proc baseNode(p: Parser): ParseResult[InternalNode] =
           if escline(p).ok:
             continue
           break
+        # KDL v2: A node can only have ONE children block (even with slashdash)
+        if children.isSome:
+          p.addError("Node cannot have multiple children blocks")
+          return failure[InternalNode]()
         discard nodeChildren(p)
+        # Even though children are slashdashed, mark that children have been encountered
+        # This enforces the ordering constraint: no arguments/properties after children
+        children = some(newSeq[InternalNode]())  # Empty children to indicate children block was present
         # Continue to check for more children blocks
         continue
 
       # Try children without preceding whitespace
       let childrenRes = nodeChildren(p)
       if childrenRes.ok:
+        # KDL v2: A node can only have ONE children block
+        if children.isSome:
+          p.addError("Node cannot have multiple children blocks")
+          return failure[InternalNode]()
         children = some(childrenRes.value)
 
         # After children block, validate that what follows is a valid terminator
@@ -1726,7 +1749,11 @@ proc nodes(p: Parser): ParseResult[seq[InternalNode]] =
             continue
           break
         # Parse and discard the slashdashed node
-        discard node(p)
+        let slashdashNodeRes = node(p)
+        if not slashdashNodeRes.ok:
+          # KDL v2: Slashdash must be followed by something to comment out
+          p.addError("Slashdash (/-) must be followed by a node, argument, property, or children block")
+          return failure[seq[InternalNode]]()
         continue
       break
 
