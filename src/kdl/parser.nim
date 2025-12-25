@@ -4,7 +4,7 @@
 ## architecture. It uses a hand-rolled recursive descent approach that closely
 ## mirrors the Winnow combinator patterns from kdl-rs.
 
-import std/[strutils, parseutils, unicode, options, strformat, tables]
+import std/[strutils, unicode, options]
 import bigints
 import ./types
 import ./nodes
@@ -1732,7 +1732,7 @@ proc node(p: Parser): ParseResult[InternalNode] =
 
 proc nodes(p: Parser): ParseResult[seq[InternalNode]] =
   ## Parses zero or more nodes
-  var result: seq[InternalNode] = @[]
+  var nodeList: seq[InternalNode] = @[]
 
   # Skip leading line-space (including escline)
   while true:
@@ -1781,7 +1781,7 @@ proc nodes(p: Parser): ParseResult[seq[InternalNode]] =
     let savedPos = p.pos
     let nodeRes = node(p)
     if nodeRes.ok:
-      result.add(nodeRes.value)
+      nodeList.add(nodeRes.value)
     else:
       # No more valid nodes
       p.pos = savedPos
@@ -1800,7 +1800,7 @@ proc nodes(p: Parser): ParseResult[seq[InternalNode]] =
 
     break
 
-  return success(result, p.pos)
+  return success(nodeList, p.pos)
 
 proc document(p: Parser): ParseResult[seq[InternalNode]] =
   ## Parses a complete KDL document
