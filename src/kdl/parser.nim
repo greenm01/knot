@@ -44,7 +44,7 @@ proc parseDecimalDigits(p: Parser, allowSign: bool = true): ParseResult[string] 
 
 proc parseDecimalDigitsInt(p: Parser, allowSign: bool = true): ParseResult[int64] =
   ## Parse decimal directly as int64 (no string allocation)
-  var result: int64 = 0
+  var value: int64 = 0
   var isNegative = false
 
   if allowSign and not p.atEnd() and (p.source[p.pos] == '+' or p.source[p.pos] == '-'):
@@ -58,8 +58,8 @@ proc parseDecimalDigitsInt(p: Parser, allowSign: bool = true): ParseResult[int64
   while not p.atEnd():
     let c = p.source[p.pos]
     if c in Digits:
-      # Inline: result = result * 10 + (c - '0')
-      result = result * 10 + (ord(c) - ord('0'))
+      # Inline: value = value * 10 + (c - '0')
+      value = value * 10 + (ord(c) - ord('0'))
       p.advance()
     elif c == '_':
       p.advance()
@@ -70,9 +70,9 @@ proc parseDecimalDigitsInt(p: Parser, allowSign: bool = true): ParseResult[int64
     return ParseResult[int64](ok: false)
 
   if isNegative:
-    result = -result
+    value = -value
 
-  return ParseResult[int64](ok: true, value: result, endPos: p.pos)
+  return ParseResult[int64](ok: true, value: value, endPos: p.pos)
 
 proc slashdash(p: Parser): ParseResult[string] =
   let start = p.pos
