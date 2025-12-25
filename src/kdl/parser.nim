@@ -1082,6 +1082,31 @@ proc nodeEntry(p: Parser): ParseResult[Option[InternalEntry]] =
           entry.format = some(fmt)
 
         return success(some(entry), p.pos)
+  else:
+    # Identifier parsing failed - check if it looks like a property with invalid key
+    # Try to manually consume what looks like an identifier to check if '=' follows
+    let savedPos = p.pos
+
+    # Skip identifier-like characters (this will consume reserved keywords too)
+    if not p.atEnd() and isIdentifierChar(p.source[p.pos]) and p.source[p.pos] notin Digits:
+      while not p.atEnd() and isIdentifierChar(p.source[p.pos]):
+        p.advance()
+
+      # Now check if '=' follows (with optional whitespace)
+      discard wss(p)
+      if not p.atEnd() and p.source[p.pos] == '=':
+        # This looks like a property with an invalid key (likely a reserved keyword)
+        p.addError("Invalid property key (reserved keywords like 'true', 'false', 'null', 'inf', 'nan' cannot be used as bare identifiers)")
+        # Skip to next entry/terminator
+        while not p.atEnd():
+          let c = p.source[p.pos]
+          if c in {'\n', '\r', ';', '{', '}'}:
+            break
+          p.advance()
+        return success(none(InternalEntry), p.pos)
+
+    # Reset position - wasn't a property attempt
+    p.pos = savedPos
 
   # Not a property, reset and try as argument
   p.pos = propStart
