@@ -1,12 +1,11 @@
 # Package
 packageName = "nimkdl"
-version = "2.0.6"
+version = "2.0.7"
 author = "niltempus"
 description = "KDL 2.0 document parser for Nim"
 license = "MIT"
 srcDir = "src"
 skipFiles = @["src/nimkdl/query.nim", "src/nimkdl/schema.nim"]
-bin = @["kdl"]
 
 # Dependencies
 requires "nim >= 2.0.0"
