@@ -225,8 +225,125 @@ proc nodeSpace(p: Parser): ParseResult[string] =
 
 # String parsing
 
+proc resolveEscapeSequence(escSeq: string): string =
+  ## Resolves a stored escape sequence (e.g., "\\n" -> newline)
+  ## This is called AFTER dedentation for multiline strings
+  if escSeq.len < 2 or escSeq[0] != '\\':
+    return escSeq
+
+  let c = escSeq[1]
+  case c
+  of 'n': return "\n"
+  of 'r': return "\r"
+  of 't': return "\t"
+  of '\\': return "\\"
+  of '/': return "/"
+  of '"': return "\""
+  of 'b': return "\b"
+  of 'f': return "\f"
+  of 's': return " "
+  of 'u':
+    # Unicode escape: \u{HEXDIGITS}
+    if escSeq.len > 3 and escSeq[2] == '{':
+      let closeBrace = escSeq.find('}', 3)
+      if closeBrace > 3:
+        let hexDigits = escSeq[3..<closeBrace]
+        try:
+          let codepoint = parseHexInt(hexDigits)
+          if codepoint <= 0x10FFFF:
+            return Rune(codepoint).toUTF8
+        except:
+          discard
+    return escSeq  # Invalid, return as-is
+  else:
+    return escSeq  # Unknown escape, return as-is
+
+proc resolveNonWhitespaceEscapes(s: string): string =
+  ## Resolves all non-whitespace escapes in a string after dedentation
+  ## This implements the KDL v2 spec requirement to resolve non-whitespace
+  ## escapes AFTER dedentation and blank line detection
+  result = ""
+  var i = 0
+  while i < s.len:
+    if s[i] == '\\' and i + 1 < s.len:
+      # Check if this is an escape we should resolve
+      let next = s[i + 1]
+      if next in {'n', 'r', 't', '\\', '/', '"', 'b', 'f', 's', 'u'}:
+        # Find the full escape sequence
+        var escSeq = "\\"
+        i += 1
+        escSeq.add(s[i])
+        i += 1
+
+        # For \u{...}, include the full sequence
+        if next == 'u' and i < s.len and s[i] == '{':
+          escSeq.add(s[i])
+          i += 1
+          while i < s.len and s[i] != '}':
+            escSeq.add(s[i])
+            i += 1
+          if i < s.len:  # Include closing }
+            escSeq.add(s[i])
+            i += 1
+
+        result.add(resolveEscapeSequence(escSeq))
+      else:
+        # Not a valid escape, keep backslash
+        result.add(s[i])
+        i += 1
+    else:
+      result.add(s[i])
+      i += 1
+
+proc escapedCharMultiline(p: Parser): ParseResult[string] =
+  ## Parses escape in multiline string - only resolves whitespace escapes immediately
+  ## Other escapes are stored literally for later resolution (per KDL v2 spec)
+  if not p.tryChar('\\').ok:
+    return failure[string]()
+
+  if p.atEnd():
+    p.unexpectedEof("escape sequence")
+    return failure[string]()
+
+  let c = p.source[p.pos]
+
+  # Check if this is a whitespace escape (must be resolved immediately)
+  if c in {' ', '\t', '\n', '\r'}:
+    p.advance()
+    # Whitespace escape: consume all following whitespace
+    while not p.atEnd():
+      let ch = p.source[p.pos]
+      if ch in {' ', '\t', '\n', '\r'}:
+        p.advance()
+      else:
+        break
+    return success("", p.pos)
+
+  # For non-whitespace escapes, store literally for later resolution
+  p.advance()
+
+  # Validate it's a known escape sequence
+  if c in {'n', 'r', 't', '\\', '/', '"', 'b', 'f', 's'}:
+    return success("\\" & $c, p.pos)
+  elif c == 'u':
+    # Store \u{...} literally
+    var escSeq = "\\u"
+    if not p.atEnd() and p.source[p.pos] == '{':
+      escSeq.add('{')
+      p.advance()
+      while not p.atEnd() and p.source[p.pos] != '}':
+        escSeq.add(p.source[p.pos])
+        p.advance()
+      if not p.atEnd() and p.source[p.pos] == '}':
+        escSeq.add('}')
+        p.advance()
+    return success(escSeq, p.pos)
+  else:
+    p.addError("Invalid escape sequence: \\" & $c)
+    return failure[string]()
+
 proc escapedChar(p: Parser): ParseResult[string] =
-  ## Parses an escaped character sequence
+  ## Parses an escaped character sequence (for single-line strings)
   if not p.tryChar('\\').ok:
     return failure[string]()
 
@@ -367,12 +484,17 @@ proc quotedString(p: Parser): ParseResult[KdlVal] =
             else:
               # Non-empty line not starting with indent - keep as-is
               dedented.add(line)
-          return success(initKString(dedented.join("\n")), p.pos)
+
+          # Per KDL v2 spec: resolve non-whitespace escapes AFTER dedentation
+          let dedentedStr = dedented.join("\n")
+          let finalStr = resolveNonWhitespaceEscapes(dedentedStr)
+          return success(initKString(finalStr), p.pos)
         else:
           currentLine.add(c)
           p.advance()
       elif c == '\\':
-        let escRes = escapedChar(p)
+        # Use multiline-specific escape handler that defers non-whitespace escapes
+        let escRes = escapedCharMultiline(p)
         if escRes.ok:
           currentLine.add(escRes.value)
         else:
