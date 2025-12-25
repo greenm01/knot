@@ -1,7 +1,7 @@
-import std/[xmlparser, unittest, xmltree, json, os, streams]
+import std/[xmlparser, unittest, xmltree, json, os]
 
 import kdl
-import kdl/[schema, query, jik, xik]
+import kdl/[jik, xik]
 
 # Alias the new parser to the old names for the test suite
 proc parseKdlFile(path: string): KdlDoc = parseKdl(readFile(path))
