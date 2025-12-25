@@ -1452,11 +1452,11 @@ proc baseNode(p: Parser): ParseResult[InternalNode] =
     return failure[InternalNode]()
 
   # Check for invalid characters immediately after node name (KDL v2 spec violation)
-  # This catches cases like "foo(bar)" or "foo{bar}" where special chars appear
-  # without whitespace, suggesting the identifier tried to continue invalidly
+  # This catches cases like "foo(bar)" where special chars appear without whitespace
+  # Note: '{' is allowed (children block), but '(' is not (type annotations only before name)
   if not p.atEnd():
     let nextChar = p.source[p.pos]
-    if nextChar in {'(', ')', '{', '}', '[', ']', '"', '\\'}:
+    if nextChar in {'(', ')', '[', ']', '"', '\\'}:
       p.addError("Unexpected character '" & nextChar & "' after node name (whitespace required)")
       return failure[InternalNode]()
 
@@ -1530,6 +1530,15 @@ proc baseNode(p: Parser): ParseResult[InternalNode] =
       let childrenRes = nodeChildren(p)
       if childrenRes.ok:
         children = some(childrenRes.value)
+
+        # After children block, validate that what follows is a valid terminator
+        # (whitespace, newline, semicolon, EOF, or closing brace)
+        if not p.atEnd():
+          let nextChar = p.source[p.pos]
+          # Check if it's a valid terminator or slashdash
+          if not (nextChar in {' ', '\t', '\r', '\n', ';', '}', '/'} or isUnicodeSpace(p.source.runeAt(p.pos))):
+            p.addError("Missing terminator after children block (expected newline, semicolon, or EOF)")
+            return failure[InternalNode]()
 
         # After children, check for slashdashed children without whitespace
         # Example: node {} /-{}
