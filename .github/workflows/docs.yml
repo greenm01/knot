@@ -10,8 +10,11 @@ jobs:
     runs-on: ubuntu-latest  
 
     steps:
-      - uses: actions/checkout@v2
-      - uses: iffy/install-nim@v4.1.1
+      - uses: actions/checkout@v3
+      - uses: alaviss/setup-nim@0.1.1
+        with:
+          path: nim
+          version: 2.0.0
       - name: Generate
         run: |
           nimble install -d -y
