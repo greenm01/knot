@@ -969,7 +969,10 @@ proc value(p: Parser): ParseResult[Option[InternalEntry]] =
         valRes = success(strRes.value.value, p.pos)
         repr = strRes.value.repr
       else:
-        # No valid value
+        # No valid value found
+        # If we parsed a type annotation, this is an error
+        if tyInfo.ty.isSome:
+          p.addError("Expected value after type annotation")
         return success(none(InternalEntry), p.pos)
 
   # Check for value terminator
@@ -1172,6 +1175,9 @@ proc baseNode(p: Parser): ParseResult[InternalNode] =
   # Node name
   let nameRes = identifier(p)
   if not nameRes.ok:
+    # If we parsed a type annotation, this is an error
+    if tyInfo.ty.isSome:
+      p.addError("Expected node name after type annotation")
     return failure[InternalNode]()
 
   var entries: seq[InternalEntry] = @[]
