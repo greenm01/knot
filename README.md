@@ -209,9 +209,9 @@ See the [documentation](https://kdl-org.github.io/kdl-nim) for complete API refe
 
 ## Credits
 
-Based on [kdl-nim](https://github.com/Patitotective/kdl-nim) by Patitotective.
+Core parser rewritten for 100% KDL 2.0 spec compliance with [Claude Code](https://claude.com/claude-code).
 
-Enhanced to 100% KDL 2.0 spec compliance with [Claude Code](https://claude.com/claude-code).
+Built upon the foundation of [kdl-nim](https://github.com/Patitotective/kdl-nim) by Patitotective, which provides the encoder, decoder, XiK/JiK, and type system infrastructure.
 
 ## License
 
