@@ -54,11 +54,11 @@ proc failure*[T](): ParseResult[T] =
 
 # Core utility procs
 
-proc atEnd*(p: Parser): bool =
+proc atEnd*(p: Parser): bool {.inline.} =
   ## Returns true if parser is at end of input
   p.pos >= p.source.len
 
-proc peek*(p: Parser, offset: int = 0): Option[char] =
+proc peek*(p: Parser, offset: int = 0): Option[char] {.inline.} =
   ## Peeks at character at current position + offset without advancing
   let pos = p.pos + offset
   if pos < p.source.len:
@@ -66,14 +66,14 @@ proc peek*(p: Parser, offset: int = 0): Option[char] =
   else:
     none(char)
 
-proc peekStr*(p: Parser, len: int): Option[string] =
+proc peekStr*(p: Parser, len: int): Option[string] {.inline.} =
   ## Peeks at a string of given length without advancing
   if p.pos + len <= p.source.len:
     some(p.source[p.pos ..< p.pos + len])
   else:
     none(string)
 
-proc advance*(p: Parser, count: int = 1) =
+proc advance*(p: Parser, count: int = 1) {.inline.} =
   ## Advances the parser position by count characters
   p.pos = min(p.pos + count, p.source.len)
 

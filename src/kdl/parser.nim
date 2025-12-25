@@ -42,6 +42,38 @@ proc parseDecimalDigits(p: Parser, allowSign: bool = true): ParseResult[string] 
     return ParseResult[string](ok: false)
   return ParseResult[string](ok: true, value: numStr, endPos: p.pos)
 
+proc parseDecimalDigitsInt(p: Parser, allowSign: bool = true): ParseResult[int64] =
+  ## Parse decimal directly as int64 (no string allocation)
+  var result: int64 = 0
+  var isNegative = false
+
+  if allowSign and not p.atEnd() and p.source[p.pos] in {'+', '-'}:
+    isNegative = (p.source[p.pos] == '-')
+    p.advance()
+
+  if p.atEnd() or p.source[p.pos] notin Digits:
+    return ParseResult[int64](ok: false)
+
+  let digitStart = p.pos
+  while not p.atEnd():
+    let c = p.source[p.pos]
+    if c in Digits:
+      # Inline: result = result * 10 + (c - '0')
+      result = result * 10 + (ord(c) - ord('0'))
+      p.advance()
+    elif c == '_':
+      p.advance()
+    else:
+      break
+
+  if p.pos == digitStart:
+    return ParseResult[int64](ok: false)
+
+  if isNegative:
+    result = -result
+
+  return ParseResult[int64](ok: true, value: result, endPos: p.pos)
+
 proc slashdash(p: Parser): ParseResult[string] =
   let start = p.pos
   if p.tryStr("/-").ok:
@@ -92,15 +124,14 @@ proc singleLineComment(p: Parser): ParseResult[string] =
     return failure[string]()
 
   # Take everything until newline
-  var comment = "//"
   while not p.atEnd():
     let c = p.source[p.pos]
     if c == '\n' or c == '\r':
       break
-    comment.add(c)
     p.advance()
 
-  return success(comment, p.pos)
+  # Single slice
+  return success(p.source[start ..< p.pos], p.pos)
 
 proc multiLineComment(p: Parser): ParseResult[string] =
   ## Parses a multi-line comment /* ... */ with nesting support
@@ -108,29 +139,26 @@ proc multiLineComment(p: Parser): ParseResult[string] =
   if not p.tryStr("/*").ok:
     return failure[string]()
 
-  var comment = "/*"
   var depth = 1
 
   while not p.atEnd() and depth > 0:
     # Check for nested comment start
     if p.peekStr(2).isSome and p.peekStr(2).get == "/*":
-      comment.add("/*")
       p.advance(2)
       depth += 1
     # Check for comment end
     elif p.peekStr(2).isSome and p.peekStr(2).get == "*/":
-      comment.add("*/")
       p.advance(2)
       depth -= 1
     else:
-      comment.add(p.source[p.pos])
       p.advance()
 
   if depth > 0:
     p.addError("Unclosed multi-line comment", "expected */")
     return failure[string]()
 
-  return success(comment, p.pos)
+  # Single slice at end
+  return success(p.source[start ..< p.pos], p.pos)
 
 proc ws(p: Parser): ParseResult[string] =
   ## Parses whitespace (unicode space or multi-line comment)
@@ -146,13 +174,16 @@ proc ws(p: Parser): ParseResult[string] =
 
 proc wss(p: Parser): string =
   ## Parses zero or more whitespace
-  result = ""
+  let startPos = p.pos
   while true:
     let res = ws(p)
-    if res.ok:
-      result.add(res.value)
-    else:
+    if not res.ok:
       break
+  # Single slice operation
+  if p.pos > startPos:
+    result = p.source[startPos ..< p.pos]
+  else:
+    result = ""
 
 proc wsp(p: Parser): ParseResult[string] =
   ## Parses one or more whitespace
@@ -435,7 +466,7 @@ proc quotedString(p: Parser): ParseResult[KdlVal] =
       return failure[KdlVal]()
 
     # Collect lines
-    var lines: seq[string] = @[]
+    var lines = newSeqOfCap[string](16)  # Pre-allocate for typical multiline strings
     var currentLine = ""
 
     while not p.atEnd():
@@ -585,7 +616,7 @@ proc rawString(p: Parser): ParseResult[KdlVal] =
       p.addError("Multiline raw string must start with a newline")
       return failure[KdlVal]()
 
-    var lines: seq[string] = @[]
+    var lines = newSeqOfCap[string](16)  # Pre-allocate for typical multiline strings
     var currentLine = ""
     var foundClosing = false
 
@@ -1133,24 +1164,24 @@ proc parseInteger(p: Parser): ParseResult[KdlVal] =
   if binRes.ok:
     return success(initKBigInt(binRes.value), p.pos)
 
-  # Try decimal
+  # Try decimal - direct int64 parsing first (fast path)
   p.pos = start
-  let decRes = parseDecimalDigits(p, allowSign = true)
-  if not decRes.ok:
+  let decIntRes = parseDecimalDigitsInt(p, allowSign = true)
+  if decIntRes.ok:
+    return success(initKInt(decIntRes.value), p.pos)
+
+  # Fallback to BigInt for overflow cases
+  p.pos = start
+  let decStrRes = parseDecimalDigits(p, allowSign = true)
+  if not decStrRes.ok:
     return failure[KdlVal]()
 
   try:
-    # Try to parse as i64 first
-    let val = parseBiggestInt(decRes.value)
-    return success(initKInt(val), p.pos)
+    let val = decStrRes.value.initBigInt
+    return success(initKBigInt(val), p.pos)
   except:
-    # Fall back to BigInt
-    try:
-      let val = decRes.value.initBigInt
-      return success(initKBigInt(val), p.pos)
-    except:
-      p.addError("Failed to parse integer")
-      return failure[KdlVal]()
+    p.addError("Failed to parse integer")
+    return failure[KdlVal]()
 
 proc parseNumber(p: Parser): ParseResult[tuple[value: KdlVal, repr: string]] =
   ## Parses any number (float or integer) and returns value + original repr
@@ -1496,7 +1527,7 @@ proc baseNode(p: Parser): ParseResult[InternalNode] =
       p.addError("Unexpected character '" & nextChar & "' after node name (whitespace required)")
       return failure[InternalNode]()
 
-  var entries: seq[InternalEntry] = @[]
+  var entries = newSeqOfCap[InternalEntry](8)  # Most nodes have < 8 entries
   var children: Option[seq[InternalNode]] = none(seq[InternalNode])
   var beforeChildren = ""
   var hasRealChildren = false  # Track if we've seen a real (non-slashdashed) children block
@@ -1732,7 +1763,7 @@ proc node(p: Parser): ParseResult[InternalNode] =
 
 proc nodes(p: Parser): ParseResult[seq[InternalNode]] =
   ## Parses zero or more nodes
-  var nodeList: seq[InternalNode] = @[]
+  var nodeList = newSeqOfCap[InternalNode](16)  # Typical document size
 
   # Skip leading line-space (including escline)
   while true:
