@@ -770,7 +770,8 @@ proc identifierString(p: Parser): ParseResult[KdlVal] =
   if ident.len == 0:
     return failure[KdlVal]()
 
-  # Check if it's a reserved keyword that shouldn't be an identifier
+  # KDL v2: Reserved keywords cannot be used as bare identifiers
+  # They must be quoted ("true") or use # prefix (#true for actual value)
   if ident in ["true", "false", "null", "inf", "-inf", "nan"]:
     p.pos = start
     return failure[KdlVal]()
