@@ -206,7 +206,7 @@ proc coord*(s: Stream, i: int): Coord =
   s.setPosition before
 
 proc coord*(s: string, at: int): Coord =
-  var i, col = 0
+  var i = 0
   while i < at:
     var isNewLine = false
     for n in newLines:
@@ -299,9 +299,6 @@ macro isObjVariant*(a: typedesc): bool =
 
   for ti in t2:
     if ti.kind == nnkRecCase:
-      let key = ti[0][0]
-      let typ = ti[0][1]
-
       return ident("true")
 
 macro getDiscriminants*(a: typedesc): seq[string] =
@@ -328,7 +325,6 @@ macro getDiscriminants*(a: typedesc): seq[string] =
   for ti in t2:
     if ti.kind == nnkRecCase:
       let key = ti[0][0]
-      let typ = ti[0][1]
       result.add newLit key.strVal
 
   result =

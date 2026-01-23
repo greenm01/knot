@@ -303,7 +303,6 @@ import nodes, utils, types
 # ----- Index -----
 
 proc rfindNode(a: KdlDoc, s: string): Option[KdlNode]
-proc findProp(a: KdlNode, s: string): Option[KdlVal]
 proc rfindRenameNode(a: KdlDoc, s: string, T: typedesc): Option[KdlNode]
 proc findRenameProp(a: KdlNode, s: string, T: typedesc): Option[KdlVal]
 
@@ -362,11 +361,6 @@ proc rfindNode(a: KdlDoc, s: string): Option[KdlNode] =
   for i in countdown(a.high, 0):
     if a[i].name.eqIdent s:
       return a[i].some
-
-proc findProp(a: KdlNode, s: string): Option[KdlVal] =
-  for key, val in a.props:
-    if key.eqIdent s:
-      return val.some
 
 proc rfindRenameNode(a: KdlDoc, s: string, T: typedesc): Option[KdlNode] =
   for i in countdown(a.high, 0):

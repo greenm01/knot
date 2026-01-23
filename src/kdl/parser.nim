@@ -75,7 +75,6 @@ proc parseDecimalDigitsInt(p: Parser, allowSign: bool = true): ParseResult[int64
   return ParseResult[int64](ok: true, value: value, endPos: p.pos)
 
 proc slashdash(p: Parser): ParseResult[string] =
-  let start = p.pos
   if p.tryStr("/-").ok:
     return ParseResult[string](ok: true, value: "/-", endPos: p.pos)
   return ParseResult[string](ok: false)
@@ -459,7 +458,6 @@ proc escapedChar(p: Parser): ParseResult[string] =
 
 proc quotedString(p: Parser): ParseResult[KdlVal] =
   ## Parses a quoted string: "..." or """..."""
-  let start = p.pos
   if not p.tryChar('"').ok:
     return failure[KdlVal]()
 
@@ -601,7 +599,6 @@ proc quotedString(p: Parser): ParseResult[KdlVal] =
 
 proc rawString(p: Parser): ParseResult[KdlVal] =
   ## Parses a raw string: #"..."# or #"""..."""# (with any number of #)
-  let start = p.pos
 
   # Count leading hashes
   var hashCount = 0
@@ -1247,7 +1244,6 @@ proc valueTerminator(p: Parser): bool =
 
 proc ty(p: Parser): ParseResult[tuple[beforeTyName: string, ty: Option[KdlIdentifier], afterTyName: string]] =
   ## Parses a type annotation: (type)
-  let start = p.pos
 
   if not p.tryChar('(').ok:
     return failure[tuple[beforeTyName: string, ty: Option[KdlIdentifier], afterTyName: string]]()
@@ -1435,7 +1431,6 @@ proc nodeEntry(p: Parser): ParseResult[Option[InternalEntry]] =
       let afterEq = wss(p)
 
       # Parse the value
-      let valStart = p.pos
       let valRes = value(p)
 
       if valRes.ok and valRes.value.isSome:
@@ -1493,7 +1488,6 @@ proc nodeEntry(p: Parser): ParseResult[Option[InternalEntry]] =
 
 proc nodeChildren(p: Parser): ParseResult[seq[InternalNode]] =
   ## Parses node children: { nodes }
-  let start = p.pos
 
   if not p.tryChar('{').ok:
     return failure[seq[InternalNode]]()
@@ -1692,7 +1686,6 @@ proc baseNode(p: Parser): ParseResult[InternalNode] =
 
 proc node(p: Parser): ParseResult[InternalNode] =
   ## Parses a node with leading whitespace and terminator
-  let start = p.pos
 
   # Leading whitespace/comments (may include slashdash comments)
   var leading = ""
@@ -1852,7 +1845,6 @@ proc nodes(p: Parser): ParseResult[seq[InternalNode]] =
 
 proc document(p: Parser): ParseResult[seq[InternalNode]] =
   ## Parses a complete KDL document
-  let start = p.pos
 
   # Optional BOM (check without adding error)
   if p.peekStr(3).isSome and p.peekStr(3).get == "\uFEFF":

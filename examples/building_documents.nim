@@ -2,24 +2,29 @@
 ##
 ## This example shows how to create KDL documents programmatically
 ## using the toKdlDoc, toKdlNode, and toKdlVal macros.
+##
+## Note: The macro syntax uses Nim's call syntax:
+## - `node(arg1, arg2, prop=val)` for nodes with args/props
+## - `node(args): children` for nodes with children  
+## - `node[tag](args)` for type-annotated nodes
 
 import ../src/kdl
 
 # Create a complete document using the toKdlDoc macro
 let config = toKdlDoc:
   server(host = "localhost", port = 8080):
-    ssl #true
-    workers 4
+    ssl(true)
+    workers(4)
 
   database(driver = "postgres"):
-    host "db.example.com"
-    port 5432
+    host("db.example.com")
+    port(5432)
     credentials:
-      username "admin"
-      password "secret"
+      username("admin")
+      password("secret")
 
-  (i32)timeout(30)
-  users "alice" "bob" "charlie"
+  timeout[i32](30)
+  users("alice", "bob", "charlie")
 
 echo "Generated config:"
 echo config.pretty()
@@ -33,7 +38,7 @@ echo serverNode.pretty()
 
 # Create typed values
 let port = toKdlVal(8080[i32])
-let enabled = toKdlVal #true
+let enabled = toKdlVal(true)
 let name = toKdlVal("MyApp")
 
 echo "\nTyped values:"
