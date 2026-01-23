@@ -84,7 +84,7 @@ proc toXmlSingle*(node: KdlNode): XmlNode =
   of '!':
     assert node.args.len == 1 and node.children.len == 0 and node.props.len == 0, "comments must have a single string argument in " & $node
     assert node.args[0].isString
-    newComment(node.args[0].getString)
+    newComment(node.args[0].kString)
   of '-':
     let val = node.args[0].get(string)
     if val.len > 1 and val[0] == '&' and val[^1] == ';':

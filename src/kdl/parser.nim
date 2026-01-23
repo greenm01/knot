@@ -866,7 +866,7 @@ proc identifier(p: Parser): ParseResult[KdlIdentifier] =
     p.pos = start
     return failure[KdlIdentifier]()
 
-  let span = p.getSpan(start)
+  let span = p.span(start)
   return success(initKdlIdentifier(val.str, some(repr), some(span)), p.pos)
 
 # Number parsing
@@ -1336,7 +1336,7 @@ proc value(p: Parser): ParseResult[Option[InternalEntry]] =
     value = valRes.value,
     ty = tyInfo.ty,
     format = format,
-    span = some(p.getSpan(start))
+    span = some(p.span(start))
   )
 
   return success(some(entry), p.pos)
@@ -1685,7 +1685,7 @@ proc baseNode(p: Parser): ParseResult[InternalNode] =
     entries = entries,
     children = children,
     format = format,
-    span = some(p.getSpan(start))
+    span = some(p.span(start))
   )
 
   return success(node, p.pos)
@@ -1871,7 +1871,7 @@ proc parseKdl*(source: string): KdlDoc =
   let docRes = document(p)
 
   if p.hasErrors():
-    let errMsg = p.getErrorMessage(source)
+    let errMsg = p.errorMessage(source)
     raise newException(KdlParserError, errMsg)
 
   if not docRes.ok:
@@ -1880,7 +1880,7 @@ proc parseKdl*(source: string): KdlDoc =
   # Check that we've consumed all input
   if not p.atEnd():
     p.addError("Unexpected content after end of document")
-    let errMsg = p.getErrorMessage(source)
+    let errMsg = p.errorMessage(source)
     raise newException(KdlParserError, errMsg)
 
   # Convert internal representation to public API

@@ -203,13 +203,13 @@ proc isDateTime*(val: KdlVal): bool =
 proc isDuration*(val: KdlVal): bool =
   val.kind == KDuration
 
-# ----- Getters -----
+# ----- Type Accessors -----
 
-proc getString*(val: KdlVal): string =
+proc kString*(val: KdlVal): string =
   check val.isString()
   val.str
 
-proc getFloat*(val: KdlVal): float =
+proc kFloat*(val: KdlVal): float =
   check val.isFloat()
   case val.kind
   of KFloat:
@@ -221,7 +221,7 @@ proc getFloat*(val: KdlVal): float =
   else:
     raise newException(ValueError, "Not a float type")
 
-proc getFloat32*(val: KdlVal): float32 =
+proc kFloat32*(val: KdlVal): float32 =
   check val.isFloat()
   case val.kind
   of KFloat:
@@ -233,7 +233,7 @@ proc getFloat32*(val: KdlVal): float32 =
   else:
     raise newException(ValueError, "Not a float type")
 
-proc getFloat64*(val: KdlVal): float64 =
+proc kFloat64*(val: KdlVal): float64 =
   check val.isFloat()
   case val.kind
   of KFloat:
@@ -245,11 +245,11 @@ proc getFloat64*(val: KdlVal): float64 =
   else:
     raise newException(ValueError, "Not a float type")
 
-proc getBool*(val: KdlVal): bool =
+proc kBool*(val: KdlVal): bool =
   check val.isBool()
   val.boolean
 
-proc getInt*(val: KdlVal): int64 =
+proc kInt*(val: KdlVal): int64 =
   check val.isInt()
   case val.kind
   of KInt:
@@ -273,7 +273,7 @@ proc getInt*(val: KdlVal): int64 =
   else:
     raise newException(ValueError, "Not an integer type")
 
-proc getInt8*(val: KdlVal): int8 =
+proc kInt8*(val: KdlVal): int8 =
   check val.isInt()
   case val.kind
   of KInt:
@@ -297,7 +297,7 @@ proc getInt8*(val: KdlVal): int8 =
   else:
     raise newException(ValueError, "Not an integer type")
 
-proc getInt16*(val: KdlVal): int16 =
+proc kInt16*(val: KdlVal): int16 =
   check val.isInt()
   case val.kind
   of KInt:
@@ -321,7 +321,7 @@ proc getInt16*(val: KdlVal): int16 =
   else:
     raise newException(ValueError, "Not an integer type")
 
-proc getInt32*(val: KdlVal): int32 =
+proc kInt32*(val: KdlVal): int32 =
   check val.isInt()
   case val.kind
   of KInt:
@@ -345,7 +345,7 @@ proc getInt32*(val: KdlVal): int32 =
   else:
     raise newException(ValueError, "Not an integer type")
 
-proc getInt64*(val: KdlVal): int64 =
+proc kInt64*(val: KdlVal): int64 =
   check val.isInt()
   case val.kind
   of KInt:
@@ -369,7 +369,7 @@ proc getInt64*(val: KdlVal): int64 =
   else:
     raise newException(ValueError, "Not an integer type")
 
-proc getUInt8*(val: KdlVal): uint8 =
+proc kUInt8*(val: KdlVal): uint8 =
   check val.isInt()
   case val.kind
   of KInt:
@@ -393,7 +393,7 @@ proc getUInt8*(val: KdlVal): uint8 =
   else:
     raise newException(ValueError, "Not an integer type")
 
-proc getUInt16*(val: KdlVal): uint16 =
+proc kUInt16*(val: KdlVal): uint16 =
   check val.isInt()
   case val.kind
   of KInt:
@@ -417,7 +417,7 @@ proc getUInt16*(val: KdlVal): uint16 =
   else:
     raise newException(ValueError, "Not an integer type")
 
-proc getUInt32*(val: KdlVal): uint32 =
+proc kUInt32*(val: KdlVal): uint32 =
   check val.isInt()
   case val.kind
   of KInt:
@@ -441,7 +441,7 @@ proc getUInt32*(val: KdlVal): uint32 =
   else:
     raise newException(ValueError, "Not an integer type")
 
-proc getUInt64*(val: KdlVal): uint64 =
+proc kUInt64*(val: KdlVal): uint64 =
   check val.isInt()
   case val.kind
   of KInt:
@@ -465,19 +465,19 @@ proc getUInt64*(val: KdlVal): uint64 =
   else:
     raise newException(ValueError, "Not an integer type")
 
-proc getDate*(val: KdlVal): string =
+proc date*(val: KdlVal): string =
   check val.isDate()
   val.date
 
-proc getTime*(val: KdlVal): string =
+proc time*(val: KdlVal): string =
   check val.isTime()
   val.time
 
-proc getDateTime*(val: KdlVal): string =
+proc dateTime*(val: KdlVal): string =
   check val.isDateTime()
   val.datetime
 
-proc getDuration*(val: KdlVal): string =
+proc duration*(val: KdlVal): string =
   check val.isDuration()
   val.duration
 
@@ -498,45 +498,45 @@ proc get*[T: Value](val: KdlVal, x: typedesc[T]): T =
     result =
       case val.kind
       of KFloat:
-        $val.getFloat()
+        $val.kFloat()
       of KString:
-        val.getString()
+        val.kString()
       of KBool:
-        $val.getBool()
+        $val.kBool()
       of KNull:
         "null"
       of KInt:
-        $val.getInt()
+        $val.kInt()
       of KInt8:
-        $val.getInt8()
+        $val.kInt8()
       of KInt16:
-        $val.getInt16()
+        $val.kInt16()
       of KInt32:
-        $val.getInt32()
+        $val.kInt32()
       of KInt64:
-        $val.getInt64()
+        $val.kInt64()
       of KUInt8:
-        $val.getUInt8()
+        $val.kUInt8()
       of KUInt16:
-        $val.getUInt16()
+        $val.kUInt16()
       of KUInt32:
-        $val.getUInt32()
+        $val.kUInt32()
       of KUInt64:
-        $val.getUInt64()
+        $val.kUInt64()
       of KBigInt:
         $val.bigint
       of KFloat32:
-        $val.getFloat32()
+        $val.kFloat32()
       of KFloat64:
-        $val.getFloat64()
+        $val.kFloat64()
       of KDate:
-        val.getDate()
+        val.date()
       of KTime:
-        val.getTime()
+        val.time()
       of KDateTime:
-        val.getDateTime()
+        val.dateTime()
       of KDuration:
-        val.getDuration()
+        val.duration()
       of KEmpty:
         "empty"
   elif T is SomeNumber or T is range:
@@ -862,7 +862,7 @@ proc setTo*[T: Value](val: var KdlVal, x: T) =
 
     val.setTo(100u8)
 
-    assert val.getFloat() == 100
+    assert val.kFloat() == 100
 
     val.setTo(20.12e2f)
 
@@ -900,7 +900,7 @@ proc `$`*(val: KdlVal): string =
   result.add:
     case val.kind
     of KFloat:
-      let f = val.getFloat()
+      let f = val.kFloat()
       if classify(f) == fcInf:
         "#inf"
       elif classify(f) == fcNegInf:
@@ -911,16 +911,16 @@ proc `$`*(val: KdlVal): string =
         $f
     of KString:
       # KDL 2.0: only quote strings if they need quoting
-      let s = val.getString()
+      let s = val.kString()
       if needsQuoting(s): s.quoted else: s
     of KBool:
       # KDL 2.0: booleans use # prefix
-      if val.getBool(): "#true" else: "#false"
+      if val.kBool(): "#true" else: "#false"
     of KNull:
       # KDL 2.0: null uses # prefix
       "#null"
     of KInt:
-      $val.getInt()
+      $val.kInt()
     of KInt8:
       $val.i8
     of KInt16:
@@ -1063,19 +1063,19 @@ proc `==`*(val1, val2: KdlVal): bool =
 
   case val1.kind
   of KString:
-    val1.getString() == val2.getString()
+    val1.kString() == val2.kString()
   of KFloat:
-    val1.getFloat() == val2.getFloat()
+    val1.kFloat() == val2.kFloat()
   of KFloat32:
     val1.f32 == val2.f32
   of KFloat64:
     val1.f64 == val2.f64
   of KBool:
-    val1.getBool() == val2.getBool()
+    val1.kBool() == val2.kBool()
   of KNull, KEmpty:
     true
   of KInt:
-    val1.getInt() == val2.getInt()
+    val1.kInt() == val2.kInt()
   of KInt8:
     val1.i8 == val2.i8
   of KInt16:
@@ -1127,13 +1127,13 @@ proc `==`*[T: Value](val: KdlVal, x: T): bool =
       result = false # Should not happen due to check
   elif T is SomeInteger:
     check val.isInt
-    result = val.getInt() == x.int64
+    result = val.kInt() == x.int64
   elif T is SomeFloat:
     check val.isFloat
-    result = val.getFloat() == x.float
+    result = val.kFloat() == x.float
   elif T is bool:
     check val.isBool
-    result = val.getBool() == x
+    result = val.kBool() == x
   else:
     {.error: "== is not implemented for " & $typeof(T).}
 

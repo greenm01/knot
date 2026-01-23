@@ -196,7 +196,7 @@ runnableExamples:
   proc decodeKdl*(a: KdlVal, v: var DateTime) =
     decodeInitKdl(v)
     assert a.isString
-    v = a.getString.parse("yyyy-MM-dd")
+    v = a.kString.parse("yyyy-MM-dd")
     decodePostKdl(v)
 
   proc decodeKdl*(a: KdlNode, v: var DateTime) =
@@ -224,13 +224,13 @@ runnableExamples:
       discard
 
     if "hour" in a.props:
-      v.hour = a.props["hour"].getInt
+      v.hour = a.props["hour"].kInt
     if "minute" in a.props:
-      v.minute = a.props["minute"].getInt
+      v.minute = a.props["minute"].kInt
     if "second" in a.props:
-      v.second = a.props["second"].getInt
+      v.second = a.props["second"].kInt
     if "nanosecond" in a.props:
-      v.nanosecond = a.props["nanosecond"].getInt
+      v.nanosecond = a.props["nanosecond"].kInt
     if "offset" in a.props:
       v.utcOffset = a.props["offset"].get(int)
 
@@ -399,7 +399,7 @@ proc enumHookKdl*[T: enum](a: string, v: var T) =
 proc enumHookKdl*(a: KdlVal, v: var enum) =
   case a.kind
   of KString:
-    decodeEnumKdl(a.getString, v)
+    decodeEnumKdl(a.kString, v)
   of KInt:
     decodeEnumKdl(a.get(int), v)
   else:
@@ -722,8 +722,8 @@ proc decodeKdl*[T: enum](a: KdlVal, v: var T) =
 
 proc decodeKdl*(a: KdlVal, v: var char) =
   ## Decoes a into v when a is one-character-long string
-  check a.isString and a.getString.len == 1, &"expected one-character-long string in {a}"
-  v = a.getString[0]
+  check a.isString and a.kString.len == 1, &"expected one-character-long string in {a}"
+  v = a.kString[0]
   decodePostKdl(v)
 
 # Not implemented since it's unclear to me where and how should the cstring be stored

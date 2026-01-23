@@ -31,14 +31,14 @@ let doc = parseKdl("""
 echo "First node name: ", doc[0].name  # "server"
 
 # Access arguments (ordered values)
-echo "Admin users: ", doc[3].args[0].getString(), ", ", doc[3].args[1].getString()
+echo "Admin users: ", doc[3].args[0].kString(), ", ", doc[3].args[1].kString()
 
 # Access properties (key-value pairs)
-echo "Server host: ", doc[0].children[0].args[0].getString()
-echo "Server port: ", doc[0].children[1].args[0].getInt()
+echo "Server host: ", doc[0].children[0].args[0].kString()
+echo "Server port: ", doc[0].children[1].args[0].kInt()
 
 # Access boolean values (KDL 2.0 uses #true/#false)
-echo "SSL enabled: ", doc[0].children[2].args[0].getBool()
+echo "SSL enabled: ", doc[0].children[2].args[0].kBool()
 
 # Access type annotations (tags)
 if doc[2].tag.isSome:

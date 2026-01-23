@@ -184,7 +184,7 @@ proc peekLineFromStart*(s: string, at: int): string =
   result = s[idx ..^ 1]
 
 ## colNonAscii is the number of colNonAscii unicode chars in the input
-proc getCoord*(s: Stream, i: int): Coord =
+proc coord*(s: Stream, i: int): Coord =
   let before = s.getPosition()
   s.setPosition 0
   while s.getPosition() < i:
@@ -205,7 +205,7 @@ proc getCoord*(s: Stream, i: int): Coord =
 
   s.setPosition before
 
-proc getCoord*(s: string, at: int): Coord =
+proc coord*(s: string, at: int): Coord =
   var i, col = 0
   while i < at:
     var isNewLine = false

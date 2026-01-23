@@ -77,7 +77,7 @@ proc advance*(p: Parser, count: int = 1) {.inline.} =
   ## Advances the parser position by count characters
   p.pos = min(p.pos + count, p.source.len)
 
-proc getSpan*(p: Parser, start: int): Span =
+proc span*(p: Parser, start: int): Span =
   ## Creates a span from start position to current position
   initSpan(start, p.pos - start)
 

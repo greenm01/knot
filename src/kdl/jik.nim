@@ -115,15 +115,15 @@ proc toKdl*(node: JsonNode, name = "-"): KdlNode =
 proc toJVal(val: KdlVal): JsonNode =
   case val.kind
   of KString:
-    newJString(val.getString)
+    newJString(val.kString)
   of KFloat:
-     newJFloat(val.getFloat)
+     newJFloat(val.kFloat)
   of KBool:
-    newJBool(val.getBool)
+    newJBool(val.kBool)
   of KNull:
     newJNull()
   of KInt:
-    newJInt(val.getInt)
+    newJInt(val.kInt)
   of KInt8:
     newJInt(val.i8)
   of KInt16:

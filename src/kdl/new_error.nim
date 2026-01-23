@@ -85,7 +85,7 @@ proc clearErrors*(p: Parser) =
   ## Clears all collected errors
   p.errors = @[]
 
-proc getErrorMessage*(p: Parser, source: string): string =
+proc errorMessage*(p: Parser, source: string): string =
   ## Gets a formatted error message for all collected errors
   if p.errors.len == 0:
     return "No errors"

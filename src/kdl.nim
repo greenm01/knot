@@ -37,17 +37,17 @@ runnableExamples:
 
 ## ### Reading values
 ## Accessing to the inner value of any `KdlVal` can be achieved by using any of the following procedures:
-## - `getString`
-## - `getFloat`
-## - `getBool`
-## - `getInt`
+## - `kString`
+## - `kFloat`
+## - `kBool`
+## - `kInt`
 runnableExamples:
   let doc = parseKdl("node 1 3.14 {child \"abc\" true}")
 
-  assert doc[0].args[0].getInt() == 1
-  assert doc[0].args[1].getFloat() == 3.14
-  assert doc[0].children[0].args[0].getString() == "abc"
-  assert doc[0].children[0].args[1].getBool() == true
+  assert doc[0].args[0].kInt() == 1
+  assert doc[0].args[1].kFloat() == 3.14
+  assert doc[0].children[0].args[0].kString() == "abc"
+  assert doc[0].children[0].args[1].kBool() == true
 
 ## There's also a generic procedure that converts `KdlValue` to the given type, consider this example:
 runnableExamples:
@@ -194,7 +194,7 @@ proc pretty*(val: KdlVal): string =
   result.add:
     case val.kind
     of KFloat:
-      let f = val.getFloat()
+      let f = val.kFloat()
       if classify(f) == fcInf:
         "#inf"
       elif classify(f) == fcNegInf:
@@ -205,16 +205,16 @@ proc pretty*(val: KdlVal): string =
         prettyFloat(f)
     of KString:
       # KDL 2.0: only quote strings if needed
-      let s = val.getString()
+      let s = val.kString()
       if needsQuoting(s): s.quoted() else: s
     of KBool:
       # KDL 2.0: booleans use # prefix
-      if val.getBool(): "#true" else: "#false"
+      if val.kBool(): "#true" else: "#false"
     of KNull:
       # KDL 2.0: null uses # prefix
       "#null"
     of KInt:
-      $val.getInt()
+      $val.kInt()
     of KInt8:
       $val.i8
     of KInt16:

@@ -48,7 +48,7 @@ proc findNode(doc: KdlDoc, name: string): Option[KdlNode] =
   none(KdlNode)
 
 # Helper to get a child property value
-proc getChildProp(node: KdlNode, childName: string): Option[KdlVal] =
+proc childProp(node: KdlNode, childName: string): Option[KdlVal] =
   for child in node.children:
     if child.name == childName and child.args.len > 0:
       return some(child.args[0])
@@ -57,42 +57,42 @@ proc getChildProp(node: KdlNode, childName: string): Option[KdlVal] =
 # Extract app configuration
 if config.findNode("app").isSome:
   let app = config.findNode("app").get
-  echo "Application: ", app.getChildProp("name").get.getString()
-  echo "Version: ", app.getChildProp("version").get.getString()
-  echo "Debug mode: ", app.getChildProp("debug").get.getBool()
+  echo "Application: ", app.childProp("name").get.kString()
+  echo "Version: ", app.childProp("version").get.kString()
+  echo "Debug mode: ", app.childProp("debug").get.kBool()
 
 # Extract server configuration
 if config.findNode("server").isSome:
   let server = config.findNode("server").get
-  let host = server.getChildProp("host").get.getString()
-  let port = server.getChildProp("port").get.getInt()
-  let workers = server.getChildProp("workers").get.getInt()
+  let host = server.childProp("host").get.kString()
+  let port = server.childProp("port").get.kInt()
+  let workers = server.childProp("workers").get.kInt()
   echo "\nServer: ", host, ":", port, " (", workers, " workers)"
 
 # Extract database configuration
 if config.findNode("database").isSome:
   let db = config.findNode("database").get
   echo "\nDatabase:"
-  echo "  Driver: ", db.getChildProp("driver").get.getString()
-  echo "  Host: ", db.getChildProp("host").get.getString()
-  echo "  Port: ", db.getChildProp("port").get.getInt()
-  echo "  Name: ", db.getChildProp("name").get.getString()
+  echo "  Driver: ", db.childProp("driver").get.kString()
+  echo "  Host: ", db.childProp("host").get.kString()
+  echo "  Port: ", db.childProp("port").get.kInt()
+  echo "  Name: ", db.childProp("name").get.kString()
 
   # Access nested configuration
   for child in db.children:
     if child.name == "pool":
       echo "  Pool settings:"
-      echo "    Min: ", child.getChildProp("min-connections").get.getInt()
-      echo "    Max: ", child.getChildProp("max-connections").get.getInt()
+      echo "    Min: ", child.childProp("min-connections").get.kInt()
+      echo "    Max: ", child.childProp("max-connections").get.kInt()
 
 # Extract logging configuration with multiple arguments
 if config.findNode("logging").isSome:
   let logging = config.findNode("logging").get
   echo "\nLogging:"
-  echo "  Level: ", logging.getChildProp("level").get.getString()
-  echo "  Format: ", logging.getChildProp("format").get.getString()
+  echo "  Level: ", logging.childProp("level").get.kString()
+  echo "  Format: ", logging.childProp("format").get.kString()
 
   # Multiple arguments
   for child in logging.children:
     if child.name == "outputs":
-      echo "  Outputs: ", child.args.mapIt(it.getString()).join(", ")
+      echo "  Outputs: ", child.args.mapIt(it.kString()).join(", ")
