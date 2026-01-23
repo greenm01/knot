@@ -1204,6 +1204,135 @@ proc find*(doc: KdlDoc, name: string): seq[KdlNode] =
     if node.name == name:
       result.add node
 
+# ----- Navigation Helpers -----
+
+proc findNode*(doc: KdlDoc, name: string): Option[KdlNode] =
+  ## Find top-level node by name, returns Option[KdlNode].
+  runnableExamples:
+    let doc = parseKdl("server { host \"localhost\" }")
+    assert doc.findNode("server").isSome
+    assert doc.findNode("missing").isNone
+
+  for node in doc:
+    if node.name == name:
+      return some(node)
+  none(KdlNode)
+
+proc findChild*(node: KdlNode, name: string): Option[KdlNode] =
+  ## Find child node by name, returns Option[KdlNode].
+  runnableExamples:
+    let doc = parseKdl("server { host \"localhost\"; port 8080 }")
+    let server = doc.findNode("server").get
+    assert server.findChild("host").isSome
+    assert server.findChild("missing").isNone
+
+  for child in node.children:
+    if child.name == name:
+      return some(child)
+  none(KdlNode)
+
+proc hasChild*(node: KdlNode, name: string): bool =
+  ## Check if node has a child with given name.
+  runnableExamples:
+    let doc = parseKdl("server { host \"localhost\" }")
+    let server = doc.findNode("server").get
+    assert server.hasChild("host")
+    assert not server.hasChild("missing")
+
+  for child in node.children:
+    if child.name == name:
+      return true
+  false
+
+proc childVal*(node: KdlNode, name: string): Option[KdlVal] =
+  ## Get first argument value from named child node.
+  ## This is the most common access pattern for config files.
+  runnableExamples:
+    let doc = parseKdl("server { host \"localhost\"; port 8080 }")
+    let server = doc.findNode("server").get
+    assert server.childVal("host").get.kString == "localhost"
+    assert server.childVal("port").get.kInt == 8080
+    assert server.childVal("missing").isNone
+
+  for child in node.children:
+    if child.name == name and child.args.len > 0:
+      return some(child.args[0])
+  none(KdlVal)
+
+# ----- Child Value with Default -----
+
+proc childString*(node: KdlNode, name: string, default: string): string =
+  ## Get string value from named child, or return default if missing/wrong type.
+  runnableExamples:
+    let doc = parseKdl("config { name \"MyApp\" }")
+    let cfg = doc.findNode("config").get
+    assert cfg.childString("name", "Unknown") == "MyApp"
+    assert cfg.childString("missing", "Default") == "Default"
+
+  let valOpt = node.childVal(name)
+  if valOpt.isNone:
+    return default
+  let val = valOpt.get
+  if val.kind == KString:
+    val.kString
+  else:
+    default
+
+proc childInt*(node: KdlNode, name: string, default: int64): int64 =
+  ## Get integer value from named child, or return default if missing/wrong type.
+  runnableExamples:
+    let doc = parseKdl("config { port 8080 }")
+    let cfg = doc.findNode("config").get
+    assert cfg.childInt("port", 3000) == 8080
+    assert cfg.childInt("missing", 3000) == 3000
+
+  let valOpt = node.childVal(name)
+  if valOpt.isNone:
+    return default
+  let val = valOpt.get
+  if val.isInt:
+    val.kInt
+  else:
+    default
+
+proc childFloat*(node: KdlNode, name: string, default: float64): float64 =
+  ## Get float value from named child, or return default if missing/wrong type.
+  ## Also accepts integer values and converts them to float.
+  runnableExamples:
+    let doc = parseKdl("config { ratio 0.75; count 10 }")
+    let cfg = doc.findNode("config").get
+    assert cfg.childFloat("ratio", 0.0) == 0.75
+    assert cfg.childFloat("count", 0.0) == 10.0  # int converted to float
+    assert cfg.childFloat("missing", 1.5) == 1.5
+
+  let valOpt = node.childVal(name)
+  if valOpt.isNone:
+    return default
+  let val = valOpt.get
+  if val.isFloat:
+    val.kFloat
+  elif val.isInt:
+    val.kInt.float64
+  else:
+    default
+
+proc childBool*(node: KdlNode, name: string, default: bool): bool =
+  ## Get boolean value from named child, or return default if missing/wrong type.
+  runnableExamples:
+    let doc = parseKdl("config { enabled #true }")
+    let cfg = doc.findNode("config").get
+    assert cfg.childBool("enabled", false) == true
+    assert cfg.childBool("missing", false) == false
+
+  let valOpt = node.childVal(name)
+  if valOpt.isNone:
+    return default
+  let val = valOpt.get
+  if val.kind == KBool:
+    val.kBool
+  else:
+    default
+
 # ----- Macros -----
 
 const identNodes = {nnkStrLit, nnkRStrLit, nnkTripleStrLit, nnkIdent}

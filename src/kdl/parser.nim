@@ -1885,3 +1885,13 @@ proc parseKdl*(source: string): KdlDoc =
 
   # Convert internal representation to public API
   return toPublicDoc(docRes.value)
+
+proc parseKdlFile*(path: string): KdlDoc =
+  ## Load and parse a KDL file from the filesystem.
+  ## Raises IOError if file cannot be read, KdlParserError if parsing fails.
+  runnableExamples:
+    # let config = parseKdlFile("config.kdl")
+    discard
+
+  let content = readFile(path)
+  parseKdl(content)

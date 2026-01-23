@@ -1,11 +1,11 @@
 ## Config File Example
 ##
 ## This example shows how to read and work with a KDL configuration file.
-## It demonstrates practical patterns for extracting configuration values.
+## It demonstrates the navigation helpers for extracting configuration values.
 
-import ../src/kdl, tables, options
+import ../src/kdl, sequtils, strutils
 
-# Example config content (normally read from a file)
+# Example config content (normally you'd use parseKdlFile("config.kdl"))
 let configContent = """
 app {
   name "MyApp"
@@ -40,59 +40,87 @@ logging {
 # Parse the config
 let config = parseKdl(configContent)
 
-# Helper to find a node by name
-proc findNode(doc: KdlDoc, name: string): Option[KdlNode] =
-  for node in doc:
-    if node.name == name:
-      return some(node)
-  none(KdlNode)
+# ============================================================================
+# Using the new navigation helpers
+# ============================================================================
 
-# Helper to get a child property value
-proc childProp(node: KdlNode, childName: string): Option[KdlVal] =
-  for child in node.children:
-    if child.name == childName and child.args.len > 0:
-      return some(child.args[0])
-  none(KdlVal)
-
-# Extract app configuration
+# Extract app configuration using findNode and childString/childBool
 if config.findNode("app").isSome:
   let app = config.findNode("app").get
-  echo "Application: ", app.childProp("name").get.kString()
-  echo "Version: ", app.childProp("version").get.kString()
-  echo "Debug mode: ", app.childProp("debug").get.kBool()
+  
+  # childString/childInt/childBool return the value or a default
+  echo "Application: ", app.childString("name", "Unknown")
+  echo "Version: ", app.childString("version", "0.0.0")
+  echo "Debug mode: ", app.childBool("debug", false)
 
 # Extract server configuration
 if config.findNode("server").isSome:
   let server = config.findNode("server").get
-  let host = server.childProp("host").get.kString()
-  let port = server.childProp("port").get.kInt()
-  let workers = server.childProp("workers").get.kInt()
-  echo "\nServer: ", host, ":", port, " (", workers, " workers)"
+  
+  # Using defaults for optional values
+  let host = server.childString("host", "127.0.0.1")
+  let port = server.childInt("port", 8080)
+  let workers = server.childInt("workers", 1)
+  let timeout = server.childInt("timeout", 30)  # Not in config, uses default
+  
+  echo "\nServer: ", host, ":", port, " (", workers, " workers, timeout: ", timeout, "s)"
 
 # Extract database configuration
 if config.findNode("database").isSome:
   let db = config.findNode("database").get
   echo "\nDatabase:"
-  echo "  Driver: ", db.childProp("driver").get.kString()
-  echo "  Host: ", db.childProp("host").get.kString()
-  echo "  Port: ", db.childProp("port").get.kInt()
-  echo "  Name: ", db.childProp("name").get.kString()
+  echo "  Driver: ", db.childString("driver", "sqlite")
+  echo "  Host: ", db.childString("host", "localhost")
+  echo "  Port: ", db.childInt("port", 5432)
+  echo "  Name: ", db.childString("name", "app_db")
 
-  # Access nested configuration
-  for child in db.children:
-    if child.name == "pool":
-      echo "  Pool settings:"
-      echo "    Min: ", child.childProp("min-connections").get.kInt()
-      echo "    Max: ", child.childProp("max-connections").get.kInt()
+  # Access nested configuration using findChild
+  let poolOpt = db.findChild("pool")
+  if poolOpt.isSome:
+    let pool = poolOpt.get
+    echo "  Pool settings:"
+    echo "    Min: ", pool.childInt("min-connections", 1)
+    echo "    Max: ", pool.childInt("max-connections", 5)
 
-# Extract logging configuration with multiple arguments
-if config.findNode("logging").isSome:
-  let logging = config.findNode("logging").get
+# Extract logging configuration
+let loggingOpt = config.findNode("logging")
+if loggingOpt.isSome:
+  let logging = loggingOpt.get
   echo "\nLogging:"
-  echo "  Level: ", logging.childProp("level").get.kString()
-  echo "  Format: ", logging.childProp("format").get.kString()
+  echo "  Level: ", logging.childString("level", "warn")
+  echo "  Format: ", logging.childString("format", "text")
 
-  # Multiple arguments
-  for child in logging.children:
-    if child.name == "outputs":
-      echo "  Outputs: ", child.args.mapIt(it.kString()).join(", ")
+  # For nodes with multiple arguments, use findChild + args
+  let outputsOpt = logging.findChild("outputs")
+  if outputsOpt.isSome:
+    echo "  Outputs: ", outputsOpt.get.args.mapIt(it.kString()).join(", ")
+
+# ============================================================================
+# Using hasChild for conditional logic
+# ============================================================================
+
+echo "\n--- Feature detection ---"
+if config.findNode("server").isSome:
+  let server = config.findNode("server").get
+  
+  if server.hasChild("ssl"):
+    echo "SSL is configured"
+  else:
+    echo "SSL is not configured (using defaults)"
+    
+  if server.hasChild("workers"):
+    echo "Custom worker count: ", server.childInt("workers", 1)
+
+# ============================================================================
+# Using childVal for raw KdlVal access
+# ============================================================================
+
+echo "\n--- Raw value access ---"
+if config.findNode("app").isSome:
+  let app = config.findNode("app").get
+  
+  # childVal returns Option[KdlVal] for when you need the raw value
+  let nameVal = app.childVal("name")
+  if nameVal.isSome:
+    echo "Name value kind: ", nameVal.get.kind
+    echo "Name value: ", nameVal.get.kString()

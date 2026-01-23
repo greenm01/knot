@@ -49,6 +49,29 @@ runnableExamples:
   assert doc[0].children[0].args[0].kString() == "abc"
   assert doc[0].children[0].args[1].kBool() == true
 
+## ### Navigation helpers
+## For config file access patterns, use these convenient helpers:
+## - `findNode` - find top-level node by name
+## - `findChild` - find child node by name  
+## - `hasChild` - check if node has a child
+## - `childVal` - get first argument of named child
+## - `childString`, `childInt`, `childFloat`, `childBool` - get typed value with default
+runnableExamples:
+  let doc = parseKdl("""
+server {
+  host "localhost"
+  port 8080
+  ssl #true
+}
+""")
+  let server = doc.findNode("server").get
+  
+  # Get typed values with defaults
+  assert server.childString("host", "0.0.0.0") == "localhost"
+  assert server.childInt("port", 3000) == 8080
+  assert server.childBool("ssl", false) == true
+  assert server.childInt("timeout", 30) == 30  # uses default
+
 ## There's also a generic procedure that converts `KdlValue` to the given type, consider this example:
 runnableExamples:
   let doc = parseKdl("node 1 3.14 255")
@@ -117,7 +140,7 @@ import bigints
 import kdl/[decoder, encoder, parser, nodes, types, utils, xik, jik]
 
 export decoder, encoder, parser, nodes, types
-export parseKdl # parser main entry point
+export parseKdl, parseKdlFile # parser main entry points
 
 func indent(s: string, count: Natural, padding = " ", newLine = "\n"): string =
   for e, line in enumerate(s.splitLines):
